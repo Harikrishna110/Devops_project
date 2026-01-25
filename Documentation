@@ -1,0 +1,118 @@
+1. Setup and Deployment Instructions:
+-------------------------------------
+=>Prerequisites:
+
+AWS Account (eu-central-1)
+Terraform CLI (v1.5+)
+kubectl CLI (for EKS)
+AWS CLI configured
+Helm (for EKS ingress controllers)
+Docker (for building container images)
+Git repository for CI/CD
+
+=> Terraform Infrastructure Deployment
+--------------------------------------
+
+Clone the Terraform repo:
+git clone https://github.com/your-org/multi-tenant-terraform.git
+cd multi-tenant-terraform
+
+Initialize Terraform:
+
+Terraform init
+Plan infrastructure changes:
+terraform plan -var-file=envs/prod.tfvars
+
+Apply the infrastructure:
+terraform apply -var-file=envs/prod.tfvars
+
+Resources provision:
+VPC with public & private subnets
+EKS cluster (or ECS cluster)
+Application Load Balancer (ALB)
+RDS instance (PostgreSQL)
+S3 bucket for artifacts
+IAM roles and security groups
+Namespaces & RBAC in EKS
+
+=> Deploy Kubernetes Applications (EKS):
+ -----------------------------------------
+
+Configure kubeconfig:
+aws eks --region eu-central-1 update-kubeconfig --name multi-tenant-cluster
+
+Create team namespaces:
+kubectl apply -f k8s/namespaces.yaml
+
+Apply RBAC & Network Policies:
+
+kubectl apply -f k8s/rbac.yaml
+kubectl apply -f k8s/network-policies.yaml
+
+
+Deploy applications via CI/CD:
+-----------------------------
+
+Configure GitHub Actions / GitLab CI / CodePipeline to build and push Docker images to ECR.
+Deploy manifests to the respective namespaces.
+
+=>ECS Deployment:
+------------------
+ECS service tasks are defined in Terraform ecs.tf.
+ALB target groups are automatically associated with ECS services.
+Deploy container tasks via Terraform or CodePipeline.
+
+=>CI/CD Pipeline Deployment:
+----------------------------
+
+Terraform provisions:
+Build runners (GitHub Actions / CodeBuild)
+Artifact storage (S3)
+Deployment automation to EKS/ECS
+Pipelines trigger automatically on code push to the repository.
+
+=>Design Decisions Justification:
+| Component                              | Decision                                      | Rationale                                                               |
+| -------------------------------------- | --------------------------------------------- | ----------------------------------------------------------------------- |
+| **EKS over ECS**                       | Chose EKS for Kubernetes-native multi-tenancy | Native namespace isolation, RBAC, and network policies for 20–50+ teams |
+| **Terraform**                          | Infrastructure as code                        | Enables reproducible, version-controlled deployments                    |
+| **ALB single entry point**             | Public ALB + private subnets                  | Central ingress, TLS termination, and reduced attack surface            |
+| **RDS managed DB**                     | Managed PostgreSQL Multi-AZ                   | Simplifies backups, scaling, and high availability                      |
+| **S3 for artifacts**                   | Centralized storage for container images/logs | Highly durable, scalable, and integrates with CI/CD                     |
+| **Namespaces per team**                | Multi-tenancy isolation                       | Limits cross-team access and resource consumption                       |
+| **Network Policies & Security Groups** | Fine-grained traffic control                  | Implements zero-trust architecture within VPC                           |
+
+=>Security Best Practices Implementation:
+------------------------------------------
+IAM Roles for EKS Pods and ECS Tasks with least privilege.
+RBAC in Kubernetes for namespace isolation per team.
+Separate IAM policies for CI/CD pipelines (deploy vs read-only).
+
+=>Network Security:
+------------------
+ALB in public subnets; workloads in private subnets.
+
+Security Groups:
+ALB: only port 443 open externally
+Pods/Tasks: only allow required inbound/outbound
+Kubernetes Network Policies enforce Pod-to-Pod communication boundaries.
+
+=> Data Protection:
+-------------------
+TLS termination at ALB.
+RDS encrypted at rest and S3 bucket encryption enabled.
+Use AWS Secrets Manager / Parameter Store for sensitive data like DB passwords.
+
+=>Observability & Compliance:
+-------------------------------
+
+CloudWatch / Prometheus for metrics.
+Fluent Bit / FireLens for log collection to CloudWatch Logs.
+OpenTelemetry for distributed tracing.
+Audit logs for compliance: track all actions via CloudTrail.
+
+=>Multi-Tenant Isolation:
+--------------------------
+Each team has a dedicated namespace (EKS) or ECS service cluster.
+Resource quotas prevent one team from consuming all cluster resources.
+Network policies prevent unauthorized cross-team traffic.
