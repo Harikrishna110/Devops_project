@@ -1,13 +1,12 @@
 Platform Goals:
 
+  =>Support 250+ engineers across 20–50+ teams.
+  =>Enable true multi-tenancy (team isolation + shared efficiency).
+  =>Provide self-service CI/CD.
+  =>Enforce security, compliance, and standards by default.
+  =>Scale horizontally with minimal platform team effort
 
-Support 250+ engineers across 20–50+ teams.
-Enable true multi-tenancy (team isolation + shared efficiency).
-Provide self-service CI/CD.
-Enforce security, compliance, and standards by default.
-Scale horizontally with minimal platform team effort
-
-Multi-tenancy isolation strategy and security :
+#Multi-tenancy isolation strategy and security :
 
 Step 1: Define the Tenant Model
 
@@ -162,4 +161,76 @@ Purpose:
    * Fast root cause analysis
    * Strong compliance posture
 
- 
+
+#Scalability approach (20 → 50+ teams:
+
+Scaling from 20 → 50+ teams is achieved by:
+  *Adding clusters
+  *Increasing automation
+  *Strengthening isolation
+
+Tool:CI/CD
+
+Things to be implemented:
+
+  *GitHub Actions / GitLab CI
+  *Mostly shared runners
+  *Namespace-scoped deploys
+
+Tool: Kubernetes Clusters
+Thngs we achieved using these:
+  *1 Non-Prod Cluster
+  *1–2 Prod Clusters
+  *Namespace per team
+  *NetworkPolicies for isolation
+  *Shared ingress & services
+
+| Dimension    | ~20 Teams             | 50+ Teams                         |
+| ------------ | --------------------- | --------------------------------- |
+| Clusters     | 1–2 shared clusters   | Multiple clusters per environment |
+| Isolation    | Namespace-level       | Cluster + namespace               |
+| CI/CD        | Mostly shared runners | Tiered + dedicated runners        |
+| Blast Radius | Medium                | Small                             |
+| Scaling Unit | Nodes                 | Clusters                          |
+| Ops Load     | Manual + automated    | Fully automated                   |
+
+
+#Cost estimation for AWS eu-central-1 region
+
+Actual costs vary by team workload, cluster size, traffic, storage, autoscaling behavior, and AWS pricing tiers. Estimate you can refine with the AWS Pricing Calculator.Below are the different resources cost varies according to the usage.
+| Category                 | Example AWS Service                                                  |
+| ------------------------ | -------------------------------------------------------------------- |
+| Kubernetes control plane | Amazon EKS                                                           |
+| Compute                  | Amazon EC2 instances                                                 |
+| Container registry       | Amazon ECR                                                           |
+| Storage                  | Amazon EBS                                                           |
+| Networking               | VPC, NAT Gateways, ALB/ELB                                           |
+| Observability            | CloudWatch Logs/Metrics                                              |
+
+Rough data for each resource that incurred the cost for usage on production scale:
+| Resource                             | Estimated Cost (Usd/ month) |
+| ------------------------------------ | ---------------------------- |
+| EKS Control Plane                    | ~$200                        |
+| EC2 Worker Nodes                     | ~$190                       |
+| EBS Storage                          | ~$80–€100                    |
+| Networking (ALB, NAT, data transfer) | ~$100–€200                   |
+| Observability (CloudWatch)           | ~$50–€140                    |
+| ==Total Estimate                     | ==Around $600+ /month
+
+
+#Key design trade-offs and rationale
+
+Cost improves with:
+1) Shared and Dedicated Clusters:
+ Rationale:
+    *Start with shared clusters for cost efficiency; add clusters as teams grow to maintain isolation without over-spending.
+2) On-Demand and Spot Compute:
+ Rationale:
+    *On-demand used in baseline for simplicity; savings plans and spot instances can cut compute cost 30–70%+ once patterns are clear.
+3) Autoscaling
+ Rationale
+    *Autoscaling aligns cost with actual use, especially important as teams scale from 20→50+
+4) Observability:
+ Rationale
+   *Balanced instrumentation at baseline increase verbosity with cost controls as platform grows.
+5) NAT and Egress Networking Cost
