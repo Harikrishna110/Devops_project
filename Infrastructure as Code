@@ -1,0 +1,88 @@
+Terraform or implementation:
+----------------------------
+=>VPC with container orchestration (EKS/ECS):
+
+Step1: User / Client Request Enters AWS:
+-------------------------------------
+When a user initiates a web or API request, DNS resolution is handled by Amazon Route 53, which directs traffic to an Application Load Balancer hosted in a public subnet. The  ALB serves as the centralized entry point to the VPC, allowing only approved ingress traffic to reach internal application resources.
+
+Step2: Traffic Enters the VPC
+----------------------------
+HTTPS traffic enters the VPC through the Application Load Balancer (ALB), which terminates TLS and forwards the request to the appropriate target group. For workloads running on Amazon EKS, the ALB routes traffic through the Ingress Controller to the Kubernetes Service and ultimately to the application Pod, while for Amazon ECS workloads, the ALB forwards traffic directly to the target group associated with the ECS tasks. Security is enforced by restricting Security Groups to allow only required ports and protocols.
+
+Step3: Container Executes Request
+---------------------------------
+After receiving the request, the application Pod (in EKS) or ECS task processes it and may communicate with other internal services, databases, caches, or external APIs as required. All east-west traffic remains within private subnets inside the VPC and is strictly controlled using Security Groups and Kubernetes Network Policies to enforce least-privilege communication.
+
+Step4 :Observability Signals:
+-----------------------------
+The platform emits metrics such as CPU utilization, memory consumption, and request latency, which are collected every few seconds using monitoring tools like Amazon CloudWatch and Prometheus for EKS workloads. Application logs are written to standard output and asynchronously shipped by log agents such as Fluent Bit or FireLens to Amazon CloudWatch Logs. For distributed tracing, a unique request ID is propagated across service boundaries to measure latency at each hop, with traces captured using AWS X-Ray or OpenTelemetry.
+
+
+Implementing the entire workflow using the terraform:
+----------------------------------------------------------
+
+1. Developer Interaction (CI/CD Layer):
+--------------------------------------
+A developer pushes code to a Git repository (GitHub / CodeCommit / GitLab).
+Terraform-provisioned CI/CD pipeline (build runner) detects the commit.
+Pipeline performs:
+Build of the container image
+Unit & integration tests
+Pushes the container image to artifact storage (Amazon ECR / S3).
+Pipeline updates deployment manifests in GitOps-style repositories for EKS or ECS.
+
+2. Container Orchestration (EKS/ECS):
+-------------------------------------
+The Terraform-provisioned VPC hosts the EKS or ECS cluster.
+Public subnets: only for ingress/load balancer
+Private subnets: for worker nodes, Pods, and tasks
+ALB/Load Balancer receives requests from users and forwards traffic to the correct target group (ECS) or Ingress Controller (EKS).
+Traffic hits the team’s isolated namespace in EKS or the ECS task.
+
+3. Multi-Tenant Isolation:
+--------------------------
+Namespaces (EKS) or task definitions (ECS) are per team.
+RBAC ensures that only the team’s users can deploy or modify their workloads.
+Resource quotas prevent one team from consuming all CPU/memory.
+Network Policies ensure Pods only talk to allowed internal services.
+
+4. Application Processing:
+--------------------------
+Pod/Task receives the request.
+Application processes the request and may interact with:
+Internal services (microservices, APIs)
+Databases (Amazon RDS)
+Caches (Redis / ElastiCache)
+External APIs
+East-west traffic between Pods/tasks stays inside private subnets, controlled by Security Groups and Network Policies for security.
+
+5. Storage and Data Flow:
+ ------------------------
+Persistent data is stored in RDS (managed PostgreSQL/MySQL).
+Static files, logs, and artifacts are stored in S3 buckets.
+Application Pods or ECS tasks use IAM roles provisioned by Terraform to access RDS and S3 securely.
+
+6. Observability:
+-----------------
+Metrics (CPU, memory, latency) are collected via CloudWatch or Prometheus.
+Logs are written to stdout and shipped asynchronously using Fluent Bit / FireLens to CloudWatch Logs.
+Tracing is enabled using AWS X-Ray or OpenTelemetry, propagating a request ID across services.
+
+7. Security & Compliance:
+--------------------------
+IAM roles and RBAC enforce access control for both humans and applications.
+Security Groups allow only required ingress and egress ports.
+Network Policies in Kubernetes control Pod-to-Pod communication.
+TLS is terminated at ALB to encrypt external traffic.
+
+8. Real-Time Request Flow Summary
+  User Request → Route 53 DNS → ALB (TLS termination)
+   → Target Group / Ingress → Pod (EKS) or ECS Task
+       → Internal Service / DB / Cache / External API
+           → Response back to ALB → User
+
+
+Multi-tenant isolation ensures team A cannot access team B’s resources.
+Terraform ensures infrastructure is reproducible, version-controlled, and compliant.
+CI/CD automates deployments without manual intervention.
