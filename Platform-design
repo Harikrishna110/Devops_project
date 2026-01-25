@@ -9,181 +9,35 @@ Platform Goals
 #Multi-tenancy isolation strategy and security :
 --------------------------------------------------------------------
 
-Step 1: Define the Tenant Model
- Decision: Engineering Team = 1 Tenant
-    Tools:
-       *GitHub / GitLab groups
-       * Okta / Azure AD / Google Workspace
- Result:
-  * Each team has its own identity group
-  *Platform automation uses this group to create access, namespaces, and pipelines
-
-Step 2: Central Identity & Access:
-
-Tools
-  * Okta / Azure AD (SSO)
-  * GitHub / GitLab (OIDC)
-  * AWS IAM (or GCP IAM / Azure RBAC)
-
-Purpose:
-  * Engineers log in using SSO
-  * No shared accounts
-  * CI/CD uses short-lived credentials via OIDC
-
-
-Step 3: Source Code Isolation:
-
-Tools
-  * GitHub / GitLab / Bitbucket
-Purpose:
-  * Each team owns:
-  * Their repos 
-  * Folders with ownership rules.
-  * Branch protection enforced
-What we acheived using this:
-  * Teams don’t accidentally change each other’s code
-  * Ownership is clear
-
-Step 4: CI Pipeline Isolation
-
-Tools
-  * GitHub Actions / GitLab CI
-  * Self-hosted runners (Kubernetes-based)
-Purpose:
-    * Each team pipeline:
-    * Runs with its own identity
-    * Uses scoped permissions
-    * Sensitive workloads use dedicated runners
-    * One team’s pipeline cannot deploy or access another team’s resources
-
-Step 5: Secure Build & Scan:
-Tools
-    * Trivy / Snyk (container & dependency scanning)
-    * SonarQube (static code quality)
-Purpose:
-    * Every build is scanned automatically
-    * Policies enforced before merge or deploy
-Implementation results:
-    * Security is automatic, not manual
-    * Unsafe code never reaches production
-
-Step 6: Artifact Storage & Trust
-Tools
-    * Amazon ECR / GCR / ACR
-    * Helm Registry (OCI)
-Purpose:
-   * Only approved registries are allowed
-   * Images are immutable and signed
-Implementation:
-   *Prevents tampered or unknown images from running
-
-Step 7: Deployment via GitOps (Controlled CD)
-Tools
-    * Argo CD / Flux
-    * Git repositories for environments
-Purpose:
-    * Teams commit desired state to Git
-    * Argo CD deploys only what’s approved
-    * Drift is automatically detected
-Results:
-    * No manual kubectl in production
-    * Full audit trail of changes
-
-Step 8: Runtime Isolation 
-Tools
-   * Kubernetes
-   * Namespaces
-   * ResourceQuotas & LimitRanges
-
-Purpose:
-   * Each team gets:
-     * team-a-dev
-     * team-a-staging
-     * team-a-prod
-* Resource usage is assgined per team
-Why:
-     * One team can’t exhaust cluster resources
-     * Failures stay contained
-
-Step 9: Network Isolation
-Tools
-    * Kubernetes NetworkPolicies
-    * Calico / Cilium
-    * Istio 
-What happens
-    * Default deny all traffic
-    * Explicit allow:
-    * Ingress → App
-    * App → DB
-    * App → shared services
-Purpose:
-* Zero-trust networking
-* Stops lateral movement across teams
-
-Step 10: Secrets & Sensitive Data
-
-Tools
-  * HashiCorp Vault
-  * AWS Secrets Manager / GCP Secret Manager
-  * Kubernetes External Secrets
-What we can achieved by these:
-* Secrets are:
-    * Never stored in Git
-    * Scoped to a team’s namespace
-    * Automatically rotated keys
-Reason for implemention
-    * Strong data isolation
-    * No credential leaks
-
-Step 11: Observability 
-Tools
-   * Prometheus + Grafana (metrics)
-   * Loki / ELK (logs)/splunk
-   * OpenTelemetry (tracing)
-   * Kubecost (cost visibility)
-Purpose:
-* Teams can see their
-    * logs
-    * metrics
-    * costs
-    * traces
-* Platform team sees everything
-
-
-Step 12: Audit & Incident Control
-Tools
-   * Kubernetes Audit Logs
-   * CloudTrail / Cloud Logging
-   * SIEM (Splunk / Datadog)
-Purpose:
-   * Every action is logged
-   * Incidents are traceable and contained
-   * Fast root cause analysis
-   * Strong compliance posture
+1.Namespaces (EKS): Separate namespaces per team to prevent resource interference.
+2.Resource Quotas: Limit CPU, memory, and storage per namespace.
+3.RBAC: Fine-grained role-based access control per team.
+4.Network Policies: Control Pod-to-Pod communication.
+5.Security Groups: Only required ports open, e.g., ALB → Pods, Pods → RDS/S3.
 
 
 #Scalability approach (20 → 50+ teams):
 -----------------------------------------------------------
-Scaling from 20 → 50+ teams is achieved by:
-  *Adding clusters
-  *Increasing automation
-  *Strengthening isolation
+1.Horizontal Scaling:
+  -------------------
+EKS Worker Nodes auto-scaled with Cluster Autoscaler.
+ECS Tasks scale via Service Auto Scaling.
 
-Tool:CI/CD
+2.Namespace Expansion:
+ --------------------
+Each team gets its own namespace without affecting others.
 
-Things to be implemented:
+3.CI/CD Scaling:
+ ----------------
+Terraform pipelines modularized per team.
+Shared artifact storage (S3) handles growth.
 
-  *GitHub Actions / GitLab CI
-  *Mostly shared runners
-  *Namespace-scoped deploys
+4)Storage Scaling:
+-----------------
+RDS Read Replicas.
+S3 scales virtually unlimited.
 
-Tool: Kubernetes Clusters
-Thngs we achieved using these:
-  *1 Non-Prod Cluster
-  *1–2 Prod Clusters
-  *Namespace per team
-  *NetworkPolicies for isolation
-  *Shared ingress & services
+
 
 | Dimension    | ~20 Teams             | 50+ Teams                         |
 | ------------ | --------------------- | --------------------------------- |
@@ -195,7 +49,8 @@ Thngs we achieved using these:
 | Ops Load     | Manual + automated    | Fully automated                   |
 
 
-#Cost estimation for AWS eu-central-1 region
+#Cost estimation for AWS eu-central-1 region:
+---------------------------------------------
 
 Actual costs vary by team workload, cluster size, traffic, storage, autoscaling behavior, and AWS pricing tiers. Estimate you can refine with the AWS Pricing Calculator.Below are the different resources cost varies according to the usage.
 | Category                 | Example AWS Service                                                  |
