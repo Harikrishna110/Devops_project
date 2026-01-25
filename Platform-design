@@ -1,5 +1,5 @@
-Platform Goals:
-
+Platform Goals
+--------------------------------------------------------------------
   =>Support 250+ engineers across 20–50+ teams.
   =>Enable true multi-tenancy (team isolation + shared efficiency).
   =>Provide self-service CI/CD.
@@ -7,9 +7,9 @@ Platform Goals:
   =>Scale horizontally with minimal platform team effort
 
 #Multi-tenancy isolation strategy and security :
+--------------------------------------------------------------------
 
 Step 1: Define the Tenant Model
-
  Decision: Engineering Team = 1 Tenant
     Tools:
        *GitHub / GitLab groups
@@ -162,8 +162,8 @@ Purpose:
    * Strong compliance posture
 
 
-#Scalability approach (20 → 50+ teams:
-
+#Scalability approach (20 → 50+ teams):
+-----------------------------------------------------------
 Scaling from 20 → 50+ teams is achieved by:
   *Adding clusters
   *Increasing automation
@@ -208,18 +208,18 @@ Actual costs vary by team workload, cluster size, traffic, storage, autoscaling 
 | Observability            | CloudWatch Logs/Metrics                                              |
 
 Rough data for each resource that incurred the cost for usage on production scale:
-| Resource                             | Estimated Cost (Usd/ month) |
+| Resource                             | Estimated Cost (Usd/ month)  |
 | ------------------------------------ | ---------------------------- |
 | EKS Control Plane                    | ~$200                        |
-| EC2 Worker Nodes                     | ~$190                       |
+| EC2 Worker Nodes                     | ~$190                        |
 | EBS Storage                          | ~$80–€100                    |
 | Networking (ALB, NAT, data transfer) | ~$100–€200                   |
 | Observability (CloudWatch)           | ~$50–€140                    |
-| ==Total Estimate                     | ==Around $600+ /month
+| ==Total Estimate                     | ==Around $600+ /month        |
 
 
 #Key design trade-offs and rationale
-
+--------------------------------------------------------------------------
 Cost improves with:
 1) Shared and Dedicated Clusters:
  Rationale:
