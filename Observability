@@ -15,3 +15,101 @@ Metrics    Traces / Logs
 New Relic Metrics API / Logs API
        │
  Dashboards, Alerts, and Analytics
+
+*OpenTelemetry (OTel) collects metrics, logs, and traces from all services (EKS Pods / ECS Tasks / CI/CD pipelines).
+*New Relic receives structured data, aggregates it, and provides dashboards and alerts.
+*Tenant-specific metrics are tagged with namespace or tenant ID.
+*Pipeline performance metrics (build time, deployment success/failure) are exported as custom events.
+
+Metrics Collection:
+-------------------
+Resources tracks:
+1.System metrics: CPU, memory, disk, network for Pods/ECS tasks, nodes.
+2.Application metrics: Request rate, latency, error rate, queue depth, DB connections.
+3.Pipeline metrics: Build duration, success/failure, artifact storage usage.
+4.Tenant-specific metrics: Namespace-level resource usage, requests per tenant.
+
+Step1:Deploy OTel Collector via Helm:
+-------------------------------------
+helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts
+helm install otel-collector open-telemetry/opentelemetry-collector \
+  --namespace observability \
+  --set config.receiver.otlp.protocols.grpc.endpoint="0.0.0.0:4317" \
+  --set config.exporter.newrelic.api_key="<NEW_RELIC_API_KEY>" \
+  --set config.exporter.newrelic.metrics_endpoint="https://metric-api.newrelic.com"
+
+step2:Configure OTel in Pods via sidecar or auto-instrumentation:
+step3:Tag metrics and traces with tenant info:
+resource:
+  attributes:
+    service.name: my-app
+    namespace: ${TENANT_NAMESPACE}
+    environment: production
+
+Logs Collection:
+----------------
+Steps:
+1.Application writes logs to stdout.
+2.Fluent Bit / OpenTelemetry Collector Log receiver collects logs.
+3.Log enrichment:
+ Add tenant_id, namespace, pipeline_id.
+ Add request_id for correlation.
+4.Export logs to New Relic Logs API.
+ Fluent Bit Example Config:
+
+Tracing:
+-------
+Goal: Distributed tracing across services and pipelines.
+OpenTelemetry propagates a request ID across service boundaries.
+Captures latency per hop and errors.
+Correlates with logs and metrics in New Relic.
+
+Example:
+HTTP request enters ALB → EKS Pod → DB → downstream service.
+OTel adds trace ID and span IDs at each hop.
+Exported to New Relic for trace visualization.
+
+CI/CD Pipeline Observability:
+----------------------------
+
+=>Instrument Terraform / Build Runners / Deployment scripts:
+ Emit metrics like build start/end, success/failure.
+ Tag with pipeline_id, team_id, repo.
+ Forward to OTel Collector → New Relic.
+
+=>Dashboards show:
+
+Average build time per team
+Deployment frequency
+Failure rate trends
+
+Data Export & Analysis Structure:
+---------------------------------
+
+Metrics: OTLP → OTel Collector → New Relic Metrics API
+Logs: stdout → Fluent Bit → OTel Collector → New Relic Logs API
+Traces: OpenTelemetry SDK → Collector → New Relic Trace API
+
+1.Labels/Tags for structured analysis:
+
+  tenant_id → multi-tenant isolation
+  namespace → Kubernetes namespace
+  service_name → EKS/ECS service
+  environment → production/staging
+  pipeline_id → CI/CD correlation
+  request_id → trace correlation
+
+2.This structure allows:
+
+Tenant-level SLA monitoring
+Cross-service latency analysis
+Pipeline bottleneck detection
+Alerting on critical events
+
+Security & Best Practices:
+--------------------------
+OTel Collector runs in private subnets with restricted Security Groups.
+API keys (New Relic) stored in AWS Secrets Manager or Kubernetes Secrets.
+TLS encryption in transit for logs/metrics/traces.
+RBAC controls which teams can access dashboards/alerts.
+Rate limits & filters on OTel Collector to prevent noisy tenants from overloading observability pipeline.
