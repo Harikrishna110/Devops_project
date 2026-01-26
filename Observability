@@ -1,0 +1,17 @@
+1. Observability Architecture Overview:
+--------------------------------------
+Components:
+Application Pods / ECS Tasks
+       │
+       │ emits metrics, logs, traces
+       ▼
+  OpenTelemetry Collector (OTel)
+       │
+ ┌─────┴─────┐
+ │           │
+Metrics    Traces / Logs
+ │           │
+ ▼           ▼
+New Relic Metrics API / Logs API
+       │
+ Dashboards, Alerts, and Analytics
