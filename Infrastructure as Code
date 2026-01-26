@@ -76,13 +76,14 @@ Security Groups allow only required ingress and egress ports.
 Network Policies in Kubernetes control Pod-to-Pod communication.
 TLS is terminated at ALB to encrypt external traffic.
 
-8. Real-Time Request Flow Summary
+8. Real-Time Request Flow Summary:
+----------------------------------
   User Request → Route 53 DNS → ALB (TLS termination)
    → Target Group / Ingress → Pod (EKS) or ECS Task
        → Internal Service / DB / Cache / External API
            → Response back to ALB → User
 
 
-Multi-tenant isolation ensures team A cannot access team B’s resources.
-Terraform ensures infrastructure is reproducible, version-controlled, and compliant.
-CI/CD automates deployments without manual intervention.
+=>Multi-tenant isolation ensures team A cannot access team B’s resources.
+=>Terraform ensures infrastructure is reproducible, version-controlled, and compliant.
+=>CI/CD automates deployments without manual intervention.
