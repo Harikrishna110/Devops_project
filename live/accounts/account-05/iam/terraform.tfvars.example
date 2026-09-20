@@ -1,0 +1,26 @@
+aws_region          = "eu-central-1"
+account_id          = "REPLACE_WITH_ACCOUNT_05_ACCOUNT_ID"
+terraform_role_arn  = "arn:aws:iam::REPLACE_ACCOUNT_ID:role/TerraformExecutionRole"
+common_tags = {
+  ManagedBy = "Terraform"
+  Account   = "account-05"
+  Service   = "iam"
+}
+roles = {
+  "REPLACE_ROLE_NAME" = {
+    trust_policy_json = <<-JSON
+    {
+      "Version": "2012-10-17",
+      "Statement": [{
+        "Effect": "Allow",
+        "Principal": {"AWS": "arn:aws:iam::REPLACE_TRUSTED_ACCOUNT_ID:root"},
+        "Action": "sts:AssumeRole"
+      }]
+    }
+    JSON
+
+    managed_policy_arns = []
+  }
+}
+
+users = {}

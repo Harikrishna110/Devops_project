@@ -1,0 +1,16 @@
+aws_region          = "eu-central-1"
+account_id          = "REPLACE_WITH_ACCOUNT_01_ACCOUNT_ID"
+terraform_role_arn  = "arn:aws:iam::REPLACE_ACCOUNT_ID:role/TerraformExecutionRole"
+common_tags = {
+  ManagedBy = "Terraform"
+  Account   = "account-01"
+  Service   = "kms"
+}
+keys = {
+  "primary" = {
+    description             = "Primary encryption key"
+    deletion_window_in_days = 30
+    enable_key_rotation     = true
+    alias_name              = "alias/REPLACE-KEY"
+  }
+}

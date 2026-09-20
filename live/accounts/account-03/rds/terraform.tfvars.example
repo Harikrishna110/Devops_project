@@ -1,0 +1,25 @@
+aws_region          = "eu-central-1"
+account_id          = "REPLACE_WITH_ACCOUNT_03_ACCOUNT_ID"
+terraform_role_arn  = "arn:aws:iam::REPLACE_ACCOUNT_ID:role/TerraformExecutionRole"
+common_tags = {
+  ManagedBy = "Terraform"
+  Account   = "account-03"
+  Service   = "rds"
+}
+instances = {
+  "db-01" = {
+    identifier               = "REPLACE-RDS-IDENTIFIER"
+    engine                   = "REPLACE_ENGINE"
+    engine_version           = "REPLACE_VERSION"
+    instance_class           = "db.t3.medium"
+    allocated_storage        = 20
+    storage_type             = "gp3"
+    subnet_ids               = ["subnet-REPLACE-A", "subnet-REPLACE-B"]
+    vpc_security_group_ids   = ["sg-REPLACE"]
+    storage_encrypted        = true
+    multi_az                 = false
+    publicly_accessible      = false
+    deletion_protection      = true
+    backup_retention_period  = 7
+  }
+}
